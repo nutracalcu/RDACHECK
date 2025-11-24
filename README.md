@@ -2,7 +2,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pro Nutrition Auditor Suite</title>
+<title>Pro Nutrition Auditor Suite (ICMR 2020 Data)</title>
 
 <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"/>
@@ -10,7 +10,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
-    /* ... (KEEP THE ORIGINAL CSS STYLES HERE) ... */
     :root {
         --primary: #3498db;
         --audit-color: #8e44ad;
@@ -42,7 +41,6 @@
     }
 
     /* TABS */
-    /* Only one tab, so simplifying the display */
     .tabs { display: flex; margin-bottom: 20px; border-bottom: 3px solid var(--audit-color); }
     .tab {
         padding: 12px 30px; cursor: default; background: var(--audit-color); margin-right: 5px; 
@@ -92,11 +90,11 @@
     .progress-bar { height: 5px; background: #eee; margin-top: 5px; display: none; }
     .progress-fill { height: 100%; background: var(--audit-color); width: 0%; transition: width 0.2s; }
     
-    /* NEW ICMR ALERT STYLE */
+    /* ICMR ALERT STYLE */
     .icmr-alert-box {
         margin-top: 30px;
         padding: 15px;
-        border: 2px solid #f39c12; /* Orange for alert */
+        border: 2px solid #f39c12; 
         background: #fffbe6;
         border-radius: 6px;
         font-size: 0.9em;
@@ -141,7 +139,7 @@
             
             <div class="icmr-alert-box">
                 <h4>⚠️ ICMR Guideline Alert System</h4>
-                <p>This application uses **ICMR-NIN 2020** RDA data. Since there is no automated notification API for guideline changes, you must manually check for the most recent updates:</p>
+                <p>This application uses **ICMR-NIN 2020** RDA data[cite: 50, 56]. Since there is no automated notification API for guideline changes, you must manually check for the most recent updates:</p>
                 <ul>
                     <li>**Official Source:** Regularly check the **ICMR-National Institute of Nutrition (NIN)** website. New "Nutrient Requirements for Indians" reports are usually announced there.</li>
                     <li>**Search:** Use search terms like "ICMR Nutrient Requirements [current year]" to find the latest published reports.</li>
@@ -154,7 +152,7 @@
             <h3>Text Editor & Report</h3>
             <p style="font-size:0.9em; margin-bottom:5px;">Paste your text list (separated by lines or commas):</p>
             <textarea id="text-editor" class="text-editor" placeholder="Example:
-Quatrefolic® 0.57 mg, Vitamin B6 2.3 mg, Zinc Sulphate 42 mg"></textarea>
+Quatrefolic® 0.57 mg, Zinc Sulphate 42 mg"></textarea>
             
             <button class="btn btn-audit" onclick="processTextToRows()">⬇️ Process Ingredients</button>
 
@@ -172,8 +170,8 @@ Quatrefolic® 0.57 mg, Vitamin B6 2.3 mg, Zinc Sulphate 42 mg"></textarea>
             <div style="margin-top:15px;">
                 <label>RDA Standard:</label>
                 <select id="rda-group">
-                    <option value="men">Adult Men (ICMR 2020)</option>
-                    <option value="women">Adult Women (ICMR 2020)</option>
+                    <option value="men">Adult Men (Sedentary ICMR 2020)</option>
+                    <option value="women">Adult Women (Sedentary ICMR 2020)</option>
                 </select>
                 <button class="btn btn-audit" onclick="generateReport()">Generate Final Report</button>
             </div>
@@ -189,37 +187,130 @@ Quatrefolic® 0.57 mg, Vitamin B6 2.3 mg, Zinc Sulphate 42 mg"></textarea>
 </div>
 
 <script>
-// NOTE: MineralData and VitaminData are removed as their associated calculators were removed.
-
-// --- AUDIT DATABASE (BASED ON PARTIAL ICMR 2020 DATA) ---
+// --- FULLY INTEGRATED AUDIT DATABASE (ICMR 2020 & Salt Yields) ---
 const auditDB = {
-    "zinc_sulphate": { name: "Zinc Sulphate", yield: 0.42, rda: { men: 17, women: 13.2 } },
-    "ferrous_bisglycinate": { name: "Ferrous Bisglycinate", yield: 0.20, rda: { men: 19, women: 29 } },
-    "nac": { name: "N-Acetyl L-Cysteine", yield: 1.0, rda: null },
-    "b3": { name: "Vitamin B3", yield: 1.0, rda: { men: 18, women: 14 } },
-    "b5": { name: "Vitamin B5", yield: 0.92, rda: { men: 5, women: 5 } },
-    "b6": { name: "Vitamin B6", yield: 0.82, rda: { men: 1.9, women: 1.9 } }, // Pyridoxine HCl Yield
-    "b9": { name: "Folic Acid (B9)", yield: 1.0, unit_pref:"mcg", rda: { men: 100, women: 100 } },
-    "b12": { name: "Vitamin B12", yield: 1.0, unit_pref:"mcg", rda: { men: 2.2, women: 2.2 } },
-    "sodium_selenite": { name: "Sodium Selenite", yield: 0.45, unit_pref: "mcg", rda: { men: 40, women: 40 } },
-    "quercetin": { name: "Quercetin", yield: 1.0, rda: null },
-    "grape_seed": { name: "Grape Seed Ext", yield: 1.0, rda: null },
-    "green_tea": { name: "Green Tea Ext", yield: 1.0, rda: null }
+    // --- MINERALS (RDA values from Annexure IA & IB, Yields from WalPar) ---
+    // Calcium
+    "calcium_carbonate": { name: "Calcium Carbonate", yield: 0.40, unit_pref: "mg", rda: { men: 1000, women: 1000 } }, // 40% [cite: 71], 1000 mg [cite: 46]
+    "calcium_citrate": { name: "Calcium Citrate", yield: 0.2407, unit_pref: "mg", rda: { men: 1000, women: 1000 } }, // 24.07% [cite: 71]
+    "dicalcium_phosphate": { name: "Dicalcium Phosphate", yield: 0.2945, unit_pref: "mg", rda: { men: 1000, women: 1000 } }, // 29.45% [cite: 71]
+    
+    // Iron
+    "ferrous_bisglycinate": { name: "Ferrous Bisglycinate", yield: 0.2737, unit_pref: "mg", rda: { men: 19, women: 29 } }, // 27.37% [cite: 81], Fe: 19 mg (M), 29 mg (W) [cite: 46]
+    "ferrous_sulphate": { name: "Ferrous Sulphate", yield: 0.3675, unit_pref: "mg", rda: { men: 19, women: 29 } }, // 36.75% [cite: 83]
+    
+    // Zinc
+    "zinc_sulphate": { name: "Zinc Sulphate", yield: 0.4049, unit_pref: "mg", rda: { men: 17, women: 13.2 } }, // 40.49% [cite: 95], Zn: 17 mg (M), 13.2 mg (W) [cite: 46]
+    "zinc_gluconate": { name: "Zinc Gluconate", yield: 0.1434, unit_pref: "mg", rda: { men: 17, women: 13.2 } }, // 14.34% [cite: 95]
+    "zinc_bisglycinate": { name: "Zinc Bisglycinate", yield: 0.3062, unit_pref: "mg", rda: { men: 17, women: 13.2 } }, // 30.62% [cite: 95]
+
+    // Magnesium
+    "magnesium_oxide": { name: "Magnesium Oxide", yield: 0.6030, unit_pref: "mg", rda: { men: 440, women: 370 } }, // 60.30% [cite: 120], Mg: 440 mg (M), 370 mg (W) [cite: 46]
+    "magnesium_citrate": { name: "Magnesium Citrate", yield: 0.1133, unit_pref: "mg", rda: { men: 440, women: 370 } }, // 11.33% [cite: 120]
+    
+    // Selenium
+    "sodium_selenite": { name: "Sodium Selenite", yield: 0.4565, unit_pref: "mcg", rda: { men: 40, women: 40 } }, // 45.65% [cite: 71], Se: 40 µg [cite: 54]
+    "selenium_dioxide": { name: "Selenium Dioxide", yield: 0.7116, unit_pref: "mcg", rda: { men: 40, women: 40 } }, // 71.16% [cite: 125]
+    
+    // Potassium
+    "potassium_chloride": { name: "Potassium Chloride", yield: 0.5243, unit_pref: "mg", rda: { men: 3500, women: 3500 } }, // 52.43% [cite: 111], K: 3500 mg [cite: 54]
+    
+    // Copper
+    "copper_sulphate": { name: "Copper Sulphate", yield: 0.3981, unit_pref: "mg", rda: { men: 1.7, women: 1.7 } }, // 39.81% [cite: 93], Cu: 1.7 mg [cite: 54]
+    
+    // Chromium
+    "chromium_picolinate": { name: "Chromium Picolinate", yield: 0.1242, unit_pref: "mcg", rda: { men: 50, women: 50 } }, // 12.42% [cite: 113], Cr: 50 µg [cite: 54]
+
+    // Phosphorous
+    "phosphorous_salt": { name: "Phosphorous (Salt Placeholder)", yield: 1.0, unit_pref: "mg", rda: { men: 1000, women: 1000 } }, // P: 1000 mg [cite: 54]
+    
+    // Sodium
+    "sodium_chloride": { name: "Sodium Chloride (as Salt)", yield: 0.3932, unit_pref: "mg", rda: { men: 2000, women: 2000 } }, // 39.32% [cite: 71], Na: 2000 mg [cite: 54]
+
+    // Iodine
+    "potassium_iodide": { name: "Potassium Iodide", yield: 0.7644, unit_pref: "mcg", rda: { men: 140, women: 140 } }, // 76.44% (for Iodine) [cite: 111], I: 140 µg [cite: 46]
+
+    // --- VITAMINS (Yields from WalPar for specific forms) ---
+    // Vitamin B1 (Thiamine)
+    "thiamine_mononitrate": { name: "Thiamine Mononitrate", yield: 0.8105, unit_pref: "mg", rda: { men: 1.4, women: 1.4 } }, // 81.05% [cite: 113], B1: 1.4 mg [cite: 46]
+    
+    // Vitamin B2 (Riboflavin)
+    "riboflavin": { name: "Riboflavin", yield: 1.0, unit_pref: "mg", rda: { men: 2.0, women: 1.7 } }, // 2.0 mg (M), 1.7 mg (W) [cite: 46]
+    "riboflavin_sod_phosphate": { name: "Riboflavin Sodium Phosphate", yield: 0.7668, unit_pref: "mg", rda: { men: 2.0, women: 1.7 } }, // 76.68% [cite: 107]
+    
+    // Vitamin B3 (Niacin)
+    "niacin": { name: "Niacin", yield: 1.0, unit_pref: "mg", rda: { men: 14, women: 11 } }, // 14 mg (M), 11 mg (W) [cite: 46]
+    
+    // Vitamin B5 (Pantothenic Acid)
+    "calcium_pantothenate": { name: "Calcium Pantothenate", yield: 0.9160, unit_pref: "mg", rda: { men: 5, women: 5 } }, // 91.60% (as Pantothenic Acid) [cite: 71], B5: 5 mg (AI) [cite: 53]
+
+    // Vitamin B6 (Pyridoxine)
+    "pyridoxine_hcl": { name: "Pyridoxine HCL", yield: 0.8226, unit_pref: "mg", rda: { men: 1.9, women: 1.9 } }, // 82.26% [cite: 125], B6: 1.9 mg [cite: 46]
+    "pyridoxal_5_phosphate": { name: "Pyridoxal-5-Phosphate", yield: 0.6845, unit_pref: "mg", rda: { men: 1.9, women: 1.9 } }, // 68.45% [cite: 125]
+    
+    // Vitamin B9 (Folate)
+    "l_methyl_folate_calcium": { name: "L-Methyl Folate Calcium", yield: 0.8872, unit_pref: "mcg", rda: { men: 300, women: 220 } }, // 88.72% (as Folic Acid) [cite: 125], Folate: 300 µg (M), 220 µg (W) [cite: 46]
+    "quatrefolic": { name: "Quatrefolic® (L-5-MTHF)", yield: 0.96, unit_pref: "mcg", rda: { men: 300, women: 220 } }, // 96% (as Folic Acid) [cite: 127]
+    
+    // Vitamin B12
+    "vitamin_b12": { name: "Vitamin B12", yield: 1.0, unit_pref: "mcg", rda: { men: 2.2, women: 2.2 } }, // B12: 2.2 µg [cite: 46]
+    
+    // Vitamin C
+    "ascorbic_acid": { name: "Ascorbic Acid", yield: 1.0, unit_pref: "mg", rda: { men: 80, women: 65 } }, // 80 mg (M), 65 mg (W) [cite: 46]
+    "calcium_ascorbate": { name: "Calcium L-Ascorbate", yield: 0.826, unit_pref: "mg", rda: { men: 80, women: 65 } }, // 82.6% (as Ascorbic Acid) [cite: 71]
+    
+    // Vitamin A
+    "vitamin_a": { name: "Vitamin A", yield: 1.0, unit_pref: "mcg", rda: { men: 1000, women: 840 } }, // Vit A: 1000 µg (M), 840 µg (W) [cite: 46]
+
+    // Vitamin D
+    "vitamin_d": { name: "Vitamin D", yield: 1.0, unit_pref: "IU", rda: { men: 600, women: 600 } }, // Vit D: 600 IU [cite: 46]
+
+    // Vitamin E
+    "vitamin_e_acetate": { name: "Vitamin E Acetate", yield: 0.9110, unit_pref: "mg", rda: { men: 7.5, women: 7.5 } }, // 91.10% (as Vit E) [cite: 125], Vit E: 7.5-10 mg (using 7.5mg/d) [cite: 53]
+
+    // --- OTHER NUTRIENTS ---
+    "biotin": { name: "Biotin", yield: 1.0, unit_pref: "mcg", rda: { men: 40, women: 40 } }, // Biotin: 40 µg (AI) [cite: 53]
+    "vitamin_k": { name: "Vitamin K", yield: 1.0, unit_pref: "mcg", rda: { men: 55, women: 55 } }, // Vit K: 55 µg (AI) [cite: 53]
+    "manganese_sulphate": { name: "Manganese Sulphate", yield: 0.3637, unit_pref: "mg", rda: { men: 4, women: 4 } }, // 36.37% [cite: 122], Mn: 4 mg [cite: 54]
+    "molybdenum_pentoxide": { name: "Molybdenum Pentoxide", yield: 0.6665, unit_pref: "mcg", rda: { men: 45, women: 45 } }, // 66.65% [cite: 118], Mo: 45 µg [cite: 54]
+    "molybdenum_salt": { name: "Molybdenum (Salt Placeholder)", yield: 1.0, unit_pref: "mcg", rda: { men: 45, women: 45 } },
+
+    // Amino Acids/Non-Essential (RDA is N/A)
+    "n_acetyl_cysteine": { name: "N-Acetyl Cysteine", yield: 0.7424, rda: null }, // 74.24% (as Cysteine) [cite: 127]
+    "l_cysteine_hcl": { name: "L-Cysteine Hydrochloride", yield: 0.7686, rda: null }, // 76.86% (as Cysteine) [cite: 127]
+    "l_lysine_hcl": { name: "L-Lysine HCL", yield: 0.80, rda: null } // 80% (as Lysine) [cite: 98]
 };
 
 const keyMap = [
-    { key: "zinc_sulphate", keywords: ["zinc", "sulphate"] },
-    { key: "ferrous_bisglycinate", keywords: ["ferrous", "bisglycinate"] },
-    { key: "nac", keywords: ["acetyl", "cysteine"] },
-    { key: "b3", keywords: ["b3", "nicotinamide"] },
-    { key: "b5", keywords: ["b5", "pantothenate"] },
-    { key: "b6", keywords: ["b6", "pyridoxine"] },
-    { key: "b9", keywords: ["folic", "folate", "quatrefolic", "b9"] },
-    { key: "b12", keywords: ["b12", "cyanocobalamin", "cobalamin"] },
-    { key: "quercetin", keywords: ["quercetin"] },
-    { key: "grape_seed", keywords: ["grape", "seed"] },
-    { key: "green_tea", keywords: ["green", "tea"] },
-    { key: "sodium_selenite", keywords: ["selenite", "selenium"] }
+    // Minerals
+    { key: "zinc_sulphate", keywords: ["zinc", "sulphate", "sulfate"] },
+    { key: "ferrous_bisglycinate", keywords: ["ferrous", "bisglycinate", "iron"] },
+    { key: "calcium_carbonate", keywords: ["calcium", "carbonate"] },
+    { key: "magnesium_oxide", keywords: ["magnesium", "oxide"] },
+    { key: "sodium_selenite", keywords: ["sodium", "selenite", "selenium"] },
+    { key: "potassium_chloride", keywords: ["potassium", "chloride"] },
+    { key: "copper_sulphate", keywords: ["copper", "sulphate", "cupric"] },
+    { key: "chromium_picolinate", keywords: ["chromium", "picolinate"] },
+    { key: "zinc_bisglycinate", keywords: ["zinc", "bisglycinate"] },
+    { key: "potassium_iodide", keywords: ["iodide", "iodine"] },
+
+    // Vitamins (Specific Forms)
+    { key: "pyridoxine_hcl", keywords: ["b6", "pyridoxine", "hcl"] },
+    { key: "riboflavin", keywords: ["b2", "riboflavin"] },
+    { key: "thiamine_mononitrate", keywords: ["b1", "thiamine", "mononitrate"] },
+    { key: "calcium_pantothenate", keywords: ["b5", "pantothenate"] },
+    { key: "ascorbic_acid", keywords: ["c", "ascorbic"] },
+    { key: "calcium_ascorbate", keywords: ["calcium", "ascorbate"] },
+    { key: "quatrefolic", keywords: ["folic", "folate", "quatrefolic", "b9"] },
+    { key: "vitamin_b12", keywords: ["b12", "cyanocobalamin", "cobalamin"] },
+    { key: "vitamin_a", keywords: ["vitamin", "a"] },
+    { key: "vitamin_d", keywords: ["vitamin", "d"] },
+    { key: "vitamin_e_acetate", keywords: ["vitamin", "e", "acetate", "tocopheryl"] },
+    { key: "niacin", keywords: ["b3", "niacin", "nicotinamide"] },
+
+    // Other Compounds
+    { key: "n_acetyl_cysteine", keywords: ["acetyl", "cysteine", "nac"] },
+    { key: "l_lysine_hcl", keywords: ["l-lysine", "lysine", "hcl"] }
 ];
 
 // --- AUDIT LOGIC FUNCTIONS ---
@@ -328,9 +419,10 @@ function createRow(key, val, unit) {
     for(let k in auditDB) opts += `<option value="${k}" ${k===key?'selected':''}>${auditDB[k].name}</option>`;
     
     let unitOpts = '';
+    // Use mg, mcg, and IU as units for input, even though RDA comparison uses mg/mcg
     unitOpts += `<option value="mg" ${unit==='mg'?'selected':''}>mg</option>`;
     unitOpts += `<option value="mcg" ${unit==='mcg'?'selected':''}>mcg</option>`;
-    // Note: IU is removed from Audit unit selector to simplify calculation logic to final mg/mcg for RDA comparison.
+    unitOpts += `<option value="IU" ${unit==='IU'?'selected':''}>IU</option>`;
 
     div.innerHTML = `
         <select id="k-${rowCount}">${opts}</select>
@@ -342,6 +434,37 @@ function createRow(key, val, unit) {
 }
 
 function addEmptyRow() { createRow('zinc_sulphate', '', 'mg'); }
+
+function convertToStandardUnit(val, unit, key) {
+    let mg = 0;
+    let mcg = 0;
+    
+    if (unit === 'IU') {
+        const name = auditDB[key].name;
+        // Apply ICMR 2020 conversion factors [cite: 63, 64, 65]
+        if (name.includes('Vitamin D')) {
+            mcg = val * 0.025; // 1 IU = 0.025 µg [cite: 64]
+        } else if (name.includes('Vitamin E')) {
+            // Assuming common dl-alpha-tocopherol (1.1 IU/mg)
+            mg = val / 1.1; // 1 IU dl-alpha-tocopherol is approx. 0.909 mg dl-alpha-tocopherol [cite: 65]
+        } else if (name.includes('Vitamin A')) {
+            mcg = val / 3.33; // 1 µg = 3.33 IU [cite: 63]
+        }
+    } else if (unit === 'mg') {
+        mg = val;
+    } else if (unit === 'mcg') {
+        mcg = val;
+    }
+
+    // Convert everything to the preferred unit of the final report (mg/mcg)
+    const prefUnit = auditDB[key].unit_pref;
+    
+    if (prefUnit === 'mcg') {
+        return (mg * 1000) + mcg; // Output in mcg
+    } else {
+        return (mcg / 1000) + mg; // Output in mg
+    }
+}
 
 function generateReport() {
     const group = document.getElementById('rda-group').value;
@@ -359,16 +482,20 @@ function generateReport() {
         if(!key || isNaN(val) || val <= 0) continue; 
         
         const d = auditDB[key];
-        // Calculate the elemental/active amount in mg
-        let total_mg = (unit==='mcg' ? val/1000 : val) * d.yield;
+        
+        // Step 1: Convert scanned value to base (mg or mcg) using IU conversion if necessary
+        const base_value = convertToStandardUnit(val, unit, key);
+        
+        // Step 2: Apply elemental yield
+        // total_elemental_value is in the database's unit_pref (mg or mcg)
+        let total_elemental_value = base_value * d.yield;
         
         let status = '-';
         if(d.rda) {
             let target = d.rda[group];
-            let actual_value = (d.unit_pref === 'mcg') ? (total_mg*1000) : total_mg;
             
             // Percentage of RDA
-            let p = (actual_value/target)*100;
+            let p = (total_elemental_value/target)*100;
             
             let cls = p > 100 ? 'bg-red' : 'bg-green';
             let txt = p > 100 ? 'High' : 'Safe/Suf.';
@@ -376,7 +503,7 @@ function generateReport() {
         }
         
         // Display yield based on preferred unit
-        let yield_display = d.unit_pref === 'mcg' ? (total_mg*1000).toFixed(1)+' mcg' : total_mg.toFixed(2)+' mg';
+        let yield_display = (d.unit_pref === 'mcg' ? total_elemental_value.toFixed(1) + ' µg' : total_elemental_value.toFixed(2) + ' mg') || total_elemental_value.toFixed(2) + ' units';
 
         tbody.innerHTML += `<tr>
             <td>${d.name}</td>
@@ -387,8 +514,6 @@ function generateReport() {
     }
     document.getElementById('audit-report').style.display = 'block';
 }
-
-// TAB LOGIC (Removed tab switching, kept only the combined content)
 </script>
 </body>
 </html>
