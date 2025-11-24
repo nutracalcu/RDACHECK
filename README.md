@@ -2,7 +2,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pro Nutrition Formulator & Auditor</title>
+<title>Pro Nutrition Auditor Suite</title>
 
 <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"/>
@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <style>
+    /* ... (KEEP THE ORIGINAL CSS STYLES HERE) ... */
     :root {
         --primary: #3498db;
         --audit-color: #8e44ad;
@@ -41,17 +42,13 @@
     }
 
     /* TABS */
-    .tabs { display: flex; margin-bottom: 20px; border-bottom: 3px solid #ddd; }
+    /* Only one tab, so simplifying the display */
+    .tabs { display: flex; margin-bottom: 20px; border-bottom: 3px solid var(--audit-color); }
     .tab {
-        padding: 12px 30px; cursor: pointer; background: #e0e0e0; margin-right: 5px; 
-        border-radius: 8px 8px 0 0; font-weight: bold; transition: 0.3s;
+        padding: 12px 30px; cursor: default; background: var(--audit-color); margin-right: 5px; 
+        border-radius: 8px 8px 0 0; font-weight: bold; transition: 0.3s; color: white;
     }
-    .tab:hover { background: #d0d0d0; }
-    .tab.active { background: var(--primary); color: white; border-color: var(--primary); }
-    .tab[data-tab="audit"].active { background: var(--audit-color); }
-
-    .tab-content { display: none; background: var(--panel); padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
-    .tab-content.active { display: block; }
+    .tab-content { background: var(--panel); padding: 25px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: block; }
 
     /* LAYOUT GRIDS */
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
@@ -94,113 +91,34 @@
     
     .progress-bar { height: 5px; background: #eee; margin-top: 5px; display: none; }
     .progress-fill { height: 100%; background: var(--audit-color); width: 0%; transition: width 0.2s; }
+    
+    /* NEW ICMR ALERT STYLE */
+    .icmr-alert-box {
+        margin-top: 30px;
+        padding: 15px;
+        border: 2px solid #f39c12; /* Orange for alert */
+        background: #fffbe6;
+        border-radius: 6px;
+        font-size: 0.9em;
+    }
+    .icmr-alert-box strong { color: #f39c12; }
 </style>
 </head>
 <body>
 
 <header>
-    <h1>Pro Nutrition Suite</h1>
-    <p>Formulator (Calculators) & Auditor (AI Scanner)</p>
+    <h1>Pro Nutrition Auditor</h1>
+    <p>AI Label Scanning and ICMR RDA Compliance Check</p>
 </header>
 
 <div class="tabs">
-    <div class="tab active" data-tab="minerals">Minerals</div>
-    <div class="tab" data-tab="vitamins">Vitamins</div>
-    <div class="tab" data-tab="audit">AI Label Auditor</div>
+    <div class="tab">AI Label Auditor</div>
 </div>
 
-<div id="minerals" class="tab-content active">
-    <div class="grid-2">
-        <div>
-            <h3>Input Formulation</h3>
-            <div class="input-box">
-                <label>1. Select Mineral:</label>
-                <select id="min-select">
-                    <option value="">-- Select --</option>
-                    <option value="calcium">Calcium</option>
-                    <option value="iron">Iron</option>
-                    <option value="magnesium">Magnesium</option>
-                    <option value="zinc">Zinc</option>
-                    <option value="selenium">Selenium</option>
-                </select>
-                
-                <label>2. Select Salt Form:</label>
-                <select id="min-form"><option>-- Select Mineral First --</option></select>
-                <div id="min-yield" style="font-size:0.9em; color:#666; margin-bottom:10px;"></div>
-                
-                <label>3. Target Elemental Amount:</label>
-                <div style="display:flex; gap:10px;">
-                    <input type="number" id="min-target" placeholder="e.g. 50">
-                    <select id="min-unit" style="width:80px;"><option value="mg">mg</option><option value="mcg">mcg</option></select>
-                </div>
-
-                <label>4. Purity & Batch:</label>
-                <div style="display:flex; gap:10px;">
-                    <input type="number" id="min-purity" value="100" placeholder="Purity %">
-                    <input type="number" id="min-batch" value="1" placeholder="Batch Size">
-                </div>
-                
-                <button class="btn btn-calc" id="btn-calc-min">Calculate Salt Dose</button>
-            </div>
-        </div>
-        <div>
-            <h3>Results</h3>
-            <div class="result-box">
-                <span>Required Raw Material (Per Dose):</span>
-                <span id="min-result-single" class="big-res">0 mg</span>
-            </div>
-            <div class="input-box" style="margin-top:20px; background:#e8f4fc; border-color:#b3d7ff;">
-                <strong>Total Batch Requirement:</strong>
-                <div id="min-result-batch" style="font-size:1.5em; color:var(--primary); font-weight:bold;">0 g</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="vitamins" class="tab-content">
-    <div class="grid-2">
-        <div>
-            <h3>Input Formulation</h3>
-            <div class="input-box">
-                <label>1. Select Vitamin:</label>
-                <select id="vit-select">
-                    <option value="">-- Select --</option>
-                    <option value="c">Vitamin C</option>
-                    <option value="d">Vitamin D3</option>
-                    <option value="b12">Vitamin B12</option>
-                    <option value="e">Vitamin E</option>
-                </select>
-                
-                <label>2. Select Form:</label>
-                <select id="vit-form"><option>-- Select Vitamin First --</option></select>
-                
-                <label>3. Target Amount:</label>
-                <div style="display:flex; gap:10px;">
-                    <input type="number" id="vit-target" placeholder="Amount">
-                    <select id="vit-unit" style="width:100px;">
-                        <option value="mg">mg</option>
-                        <option value="mcg">mcg</option>
-                        <option value="IU">IU</option>
-                    </select>
-                </div>
-
-                <label>4. Purity (%):</label>
-                <input type="number" id="vit-purity" value="100">
-                
-                <button class="btn btn-calc" id="btn-calc-vit">Calculate Vitamin Dose</button>
-            </div>
-        </div>
-        <div>
-            <h3>Results</h3>
-            <div class="result-box">
-                <span>Required Raw Material:</span>
-                <span id="vit-result-single" class="big-res">0 mg</span>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="audit" class="tab-content">
+<div id="unified-content" class="tab-content active">
+    
+    <h2 style="margin-top: 0; color: var(--audit-color);">🔬 AI Label Auditor (ICMR RDA Check)</h2>
+    
     <div class="audit-grid">
         <div>
             <div class="input-box">
@@ -220,7 +138,17 @@
                 <div class="progress-bar" id="p-bar"><div class="progress-fill" id="p-fill"></div></div>
                 <div id="scan-status" style="text-align:center; font-size:0.8em; margin-top:5px; color:#666;"></div>
             </div>
-        </div>
+            
+            <div class="icmr-alert-box">
+                <h4>⚠️ ICMR Guideline Alert System</h4>
+                <p>This application uses **ICMR-NIN 2020** RDA data. Since there is no automated notification API for guideline changes, you must manually check for the most recent updates:</p>
+                <ul>
+                    <li>**Official Source:** Regularly check the **ICMR-National Institute of Nutrition (NIN)** website. New "Nutrient Requirements for Indians" reports are usually announced there.</li>
+                    <li>**Search:** Use search terms like "ICMR Nutrient Requirements [current year]" to find the latest published reports.</li>
+                    <li>**Action:** If a new report is released, **you are responsible** for updating the RDA values in the `auditDB` within the application's source code.</li>
+                </ul>
+            </div>
+            </div>
 
         <div>
             <h3>Text Editor & Report</h3>
@@ -252,7 +180,7 @@ Quatrefolic® 0.57 mg, Vitamin B6 2.3 mg, Zinc Sulphate 42 mg"></textarea>
 
             <div id="audit-report" style="display:none; margin-top:15px;">
                 <table style="font-size:0.9em;">
-                    <thead style="background:#f3e5f5;"><tr><th>Ingredient</th><th>Scan</th><th>Yield</th><th>Status</th></tr></thead>
+                    <thead style="background:#f3e5f5;"><tr><th>Ingredient</th><th>Scan</th><th>Yield</th><th>Status (vs RDA)</th></tr></thead>
                     <tbody id="report-body"></tbody>
                 </table>
             </div>
@@ -261,23 +189,9 @@ Quatrefolic® 0.57 mg, Vitamin B6 2.3 mg, Zinc Sulphate 42 mg"></textarea>
 </div>
 
 <script>
-// --- GLOBAL DATA ---
-const mineralData = {
-    calcium: [{id:'carbonate', name:'Carbonate', p:0.4}, {id:'citrate', name:'Citrate', p:0.241}],
-    iron: [{id:'bisglycinate', name:'Bisglycinate', p:0.2}, {id:'sulphate', name:'Sulphate', p:0.367}],
-    zinc: [{id:'sulphate', name:'Sulphate', p:0.42}, {id:'gluconate', name:'Gluconate', p:0.143}],
-    magnesium: [{id:'oxide', name:'Oxide', p:0.603}, {id:'citrate', name:'Citrate', p:0.113}],
-    selenium: [{id:'selenite', name:'Sodium Selenite', p:0.45}]
-};
+// NOTE: MineralData and VitaminData are removed as their associated calculators were removed.
 
-const vitaminData = {
-    c: { forms: [{id:'ascorbic', name:'Ascorbic Acid', p:1.0}] },
-    d: { forms: [{id:'cholecalciferol', name:'Cholecalciferol', iu_to_mcg:0.025}] },
-    b12: { forms: [{id:'cyano', name:'Cyanocobalamin', p:1.0}] },
-    e: { forms: [{id:'acetate', name:'Tocopheryl Acetate', mg_to_iu:1.36}] }
-};
-
-// --- AUDIT DATABASE ---
+// --- AUDIT DATABASE (BASED ON PARTIAL ICMR 2020 DATA) ---
 const auditDB = {
     "zinc_sulphate": { name: "Zinc Sulphate", yield: 0.42, rda: { men: 17, women: 13.2 } },
     "ferrous_bisglycinate": { name: "Ferrous Bisglycinate", yield: 0.20, rda: { men: 19, women: 29 } },
@@ -308,60 +222,7 @@ const keyMap = [
     { key: "sodium_selenite", keywords: ["selenite", "selenium"] }
 ];
 
-// --- 1. MINERAL LOGIC ---
-const mSel = document.getElementById('min-select');
-const mForm = document.getElementById('min-form');
-mSel.addEventListener('change', () => {
-    mForm.innerHTML = '<option>-- Select Form --</option>';
-    if(mineralData[mSel.value]) mineralData[mSel.value].forEach(x => mForm.add(new Option(x.name, x.id)));
-});
-mForm.addEventListener('change', () => {
-    const s = mineralData[mSel.value].find(x => x.id === mForm.value);
-    if(s) document.getElementById('min-yield').innerText = `Yield: ${(s.p*100).toFixed(1)}%`;
-});
-document.getElementById('btn-calc-min').addEventListener('click', () => {
-    const s = mineralData[mSel.value].find(x => x.id === mForm.value);
-    const t = parseFloat(document.getElementById('min-target').value);
-    const u = document.getElementById('min-unit').value;
-    const p = parseFloat(document.getElementById('min-purity').value) || 100;
-    const b = parseFloat(document.getElementById('min-batch').value) || 1;
-    
-    if(!s || isNaN(t)) return;
-    let tMg = u==='mcg' ? t/1000 : t;
-    let dose = (tMg / s.p) / (p/100);
-    
-    document.getElementById('min-result-single').innerText = dose.toFixed(3) + " mg";
-    let batch = dose * b;
-    document.getElementById('min-result-batch').innerText = batch > 1000 ? (batch/1000).toFixed(3)+" g" : batch.toFixed(1)+" mg";
-});
-
-// --- 2. VITAMIN LOGIC ---
-const vSel = document.getElementById('vit-select');
-const vForm = document.getElementById('vit-form');
-vSel.addEventListener('change', () => {
-    vForm.innerHTML = '<option>-- Select Form --</option>';
-    if(vitaminData[vSel.value]) vitaminData[vSel.value].forms.forEach(x => vForm.add(new Option(x.name, x.id)));
-});
-document.getElementById('btn-calc-vit').addEventListener('click', () => {
-    const f = vitaminData[vSel.value].forms.find(x => x.id === vForm.value);
-    const t = parseFloat(document.getElementById('vit-target').value);
-    const u = document.getElementById('vit-unit').value;
-    const p = parseFloat(document.getElementById('vit-purity').value) || 100;
-    
-    if(!f || isNaN(t)) return;
-    let tMg = 0;
-    if(u==='mg') tMg = t;
-    else if(u==='mcg') tMg = t/1000;
-    else if(u==='IU') {
-        if(f.iu_to_mcg) tMg = (t*f.iu_to_mcg)/1000;
-        else if(f.mg_to_iu) tMg = t/f.mg_to_iu;
-    }
-    
-    let dose = f.p ? (tMg/f.p)/(p/100) : tMg/(p/100);
-    document.getElementById('vit-result-single').innerText = dose.toFixed(3) + " mg";
-});
-
-// --- 3. AUDIT LOGIC ---
+// --- AUDIT LOGIC FUNCTIONS ---
 let cropper;
 let rowCount = 0;
 
@@ -406,16 +267,20 @@ function handleExcel(e) {
         const ws = wb.Sheets[wb.SheetNames[0]];
         const json = XLSX.utils.sheet_to_json(ws, {header:1});
         let txt = "";
-        json.forEach(row => { if(row[0] && row[1]) txt += `${row[0]}\n${row[1]}\n`; });
+        json.forEach(row => { 
+            if(row[0] && row[1]) {
+                txt += `${row[0]} ${row[1]}\n`; 
+            } else if (row[0]) {
+                txt += `${row[0]}\n`;
+            }
+        });
         document.getElementById('text-editor').value = txt;
     };
     reader.readAsArrayBuffer(file);
 }
 
 function processTextToRows() {
-    // UPDATED: Pre-process commas to newlines to handle "Name 5mg, Name 10mg" format
     let rawText = document.getElementById('text-editor').value;
-    // Replace commas that are likely separators (followed by space or new word)
     rawText = rawText.replace(/,\s*/g, '\n');
     
     const lines = rawText.split('\n');
@@ -432,23 +297,24 @@ function processTextToRows() {
         }
         
         if(key) {
-            // Find amount in this line
             let a = extractAmount(line);
-            // If not found, check next line (vertical list style)
             if(!a.val && lines[i+1]) a = extractAmount(lines[i+1].toLowerCase());
             
             createRow(key, a.val, a.unit);
         }
     });
+    if (box.children.length === 0) {
+        box.innerHTML = '<p style="text-align:center; color:#999; padding:20px;">Rows will appear here...</p>';
+    }
 }
 
 function extractAmount(s) {
-    // Regex matches decimal numbers (e.g. 0.0025, 42.5, 100) followed by unit
+    // Regex matches decimal numbers followed by unit (mg, mcg, iu)
     const m = s.match(/(\d+(\.\d+)?)\s*(mg|mcg|iu)/);
     if(m) return {val: m[1], unit: m[3]};
-    // Fallback: just a number
-    const n = s.match(/(\d+(\.\d+)?)/);
-    if(n) return {val: n[1], unit: 'mg'}; // Default mg if no unit found
+    // Fallback: just a number, default to mg
+    const n = s.match(/(\d+(\.\d+)?)/); 
+    if(n) return {val: n[1], unit: 'mg'}; 
     return {val: '', unit: 'mg'};
 }
 
@@ -461,13 +327,15 @@ function createRow(key, val, unit) {
     let opts = '';
     for(let k in auditDB) opts += `<option value="${k}" ${k===key?'selected':''}>${auditDB[k].name}</option>`;
     
+    let unitOpts = '';
+    unitOpts += `<option value="mg" ${unit==='mg'?'selected':''}>mg</option>`;
+    unitOpts += `<option value="mcg" ${unit==='mcg'?'selected':''}>mcg</option>`;
+    // Note: IU is removed from Audit unit selector to simplify calculation logic to final mg/mcg for RDA comparison.
+
     div.innerHTML = `
         <select id="k-${rowCount}">${opts}</select>
         <input type="number" id="v-${rowCount}" value="${val}" placeholder="0">
-        <select id="u-${rowCount}">
-            <option value="mg" ${unit==='mg'?'selected':''}>mg</option>
-            <option value="mcg" ${unit==='mcg'?'selected':''}>mcg</option>
-        </select>
+        <select id="u-${rowCount}">${unitOpts}</select>
         <button onclick="this.parentElement.remove()" style="color:red; background:none; border:none; cursor:pointer;">X</button>
     `;
     document.getElementById('rows-container').appendChild(div);
@@ -488,39 +356,39 @@ function generateReport() {
         const val = parseFloat(document.getElementById(`v-${id}`).value);
         const unit = document.getElementById(`u-${id}`).value;
         
-        if(!key || isNaN(val)) continue;
+        if(!key || isNaN(val) || val <= 0) continue; 
         
         const d = auditDB[key];
-        let elem = (unit==='mcg' ? val/1000 : val) * d.yield;
+        // Calculate the elemental/active amount in mg
+        let total_mg = (unit==='mcg' ? val/1000 : val) * d.yield;
         
         let status = '-';
         if(d.rda) {
             let target = d.rda[group];
-            let p = (d.unit_pref === 'mcg') ? ((elem*1000)/target)*100 : (elem/target)*100;
-            // STRICT LOGIC: > 100% is RED (High), <= 100% is GREEN (Safe)
+            let actual_value = (d.unit_pref === 'mcg') ? (total_mg*1000) : total_mg;
+            
+            // Percentage of RDA
+            let p = (actual_value/target)*100;
+            
             let cls = p > 100 ? 'bg-red' : 'bg-green';
-            let txt = p > 100 ? 'High' : 'Safe';
+            let txt = p > 100 ? 'High' : 'Safe/Suf.';
             status = `<span class="badge ${cls}">${p.toFixed(0)}%</span> <small>${txt}</small>`;
         }
         
+        // Display yield based on preferred unit
+        let yield_display = d.unit_pref === 'mcg' ? (total_mg*1000).toFixed(1)+' mcg' : total_mg.toFixed(2)+' mg';
+
         tbody.innerHTML += `<tr>
             <td>${d.name}</td>
             <td>${val} ${unit}</td>
-            <td>${d.unit_pref === 'mcg' ? (elem*1000).toFixed(1)+' mcg' : elem.toFixed(2)+' mg'}</td>
+            <td>${yield_display}</td>
             <td>${status}</td>
         </tr>`;
     }
     document.getElementById('audit-report').style.display = 'block';
 }
 
-// TAB LOGIC
-document.querySelectorAll('.tab').forEach(t => {
-    t.addEventListener('click', () => {
-        document.querySelectorAll('.tab, .tab-content').forEach(c => c.classList.remove('active'));
-        t.classList.add('active');
-        document.getElementById(t.dataset.tab).classList.add('active');
-    });
-});
+// TAB LOGIC (Removed tab switching, kept only the combined content)
 </script>
 </body>
 </html>
